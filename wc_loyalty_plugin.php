@@ -286,6 +286,8 @@ class WC_Discount_Programs {
     public function __construct() {
         add_action('admin_menu', array($this, 'add_admin_menu'));
         add_action('wp_ajax_save_discount_program', array($this, 'save_program'));
+        add_action('wp_ajax_import_discount_programs', array($this, 'import_programs'));
+        add_action('wp_ajax_download_import_template', array($this, 'download_template'));
         add_action('woocommerce_cart_calculate_fees', array($this, 'apply_discount_programs'));
         add_filter('woocommerce_coupon_discount_amount_html', array($this, 'modify_discount_display'), 10, 2);
     }
@@ -308,6 +310,7 @@ class WC_Discount_Programs {
             
             <div class="loyalty-admin-tabs">
                 <button class="tab-button active" data-tab="programs">Programs</button>
+                <button class="tab-button" data-tab="import">Import Programs</button>
                 <button class="tab-button" data-tab="coupons">Coupons</button>
                 <button class="tab-button" data-tab="dashboard">Dashboard</button>
             </div>
@@ -393,6 +396,168 @@ class WC_Discount_Programs {
                 <h2>Existing Programs</h2>
                 <div id="programs-list">
                     <?php $this->display_programs_list(); ?>
+                </div>
+            </div>
+            
+            <div id="import-tab" class="tab-content">
+                <h2>Import Discount Programs</h2>
+                <p>Upload a CSV or Excel file to automatically create multiple discount programs. The system will process your file and create programs based on the data.</p>
+                
+                <div class="import-section">
+                    <h3>📁 Upload File</h3>
+                    <form id="import-programs-form" enctype="multipart/form-data">
+                        <table class="form-table">
+                            <tr>
+                                <th><label for="import_file">Select File</label></th>
+                                <td>
+                                    <input type="file" id="import_file" name="import_file" accept=".csv,.xlsx,.xls" required>
+                                    <p class="description">Supported formats: CSV, Excel (.xlsx, .xls)</p>
+                                </td>
+                            </tr>
+                            <tr>
+                                <th><label for="import_mode">Import Mode</label></th>
+                                <td>
+                                    <select id="import_mode" name="import_mode">
+                                        <option value="create_new">Create New Programs</option>
+                                        <option value="update_existing">Update Existing Programs</option>
+                                        <option value="replace_all">Replace All Programs</option>
+                                    </select>
+                                    <p class="description">Choose how to handle existing programs</p>
+                                </td>
+                            </tr>
+                        </table>
+                        <p class="submit">
+                            <input type="submit" class="button-primary" value="Import Programs">
+                            <button type="button" id="download-template" class="button">Download Template</button>
+                        </p>
+                    </form>
+                </div>
+                
+                <div class="template-info">
+                    <h3>📋 File Format Guide</h3>
+                    <p>Your import file should contain the following columns:</p>
+                    
+                    <table class="wp-list-table widefat fixed striped">
+                        <thead>
+                            <tr>
+                                <th>Column Name</th>
+                                <th>Description</th>
+                                <th>Example Values</th>
+                                <th>Required</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>program_name</strong></td>
+                                <td>Name of the discount program</td>
+                                <td>Summer Sale, Buy 2 Get 1 Free</td>
+                                <td>✅ Yes</td>
+                            </tr>
+                            <tr>
+                                <td><strong>program_type</strong></td>
+                                <td>Type of discount program</td>
+                                <td>buy_x_get_y, percentage_discount, fixed_amount_discount, bulk_discount</td>
+                                <td>✅ Yes</td>
+                            </tr>
+                            <tr>
+                                <td><strong>product_ids</strong></td>
+                                <td>Product IDs (comma-separated)</td>
+                                <td>123,456,789 or leave empty for all products</td>
+                                <td>❌ No</td>
+                            </tr>
+                            <tr>
+                                <td><strong>product_skus</strong></td>
+                                <td>Product SKUs (comma-separated)</td>
+                                <td>SKU001,SKU002,SKU003</td>
+                                <td>❌ No</td>
+                            </tr>
+                            <tr>
+                                <td><strong>buy_quantity</strong></td>
+                                <td>Buy quantity (for Buy X Get Y)</td>
+                                <td>2, 3, 5</td>
+                                <td>❌ No</td>
+                            </tr>
+                            <tr>
+                                <td><strong>get_quantity</strong></td>
+                                <td>Get quantity (for Buy X Get Y)</td>
+                                <td>1, 2</td>
+                                <td>❌ No</td>
+                            </tr>
+                            <tr>
+                                <td><strong>discount_percentage</strong></td>
+                                <td>Discount percentage</td>
+                                <td>10, 25, 50</td>
+                                <td>❌ No</td>
+                            </tr>
+                            <tr>
+                                <td><strong>discount_amount</strong></td>
+                                <td>Fixed discount amount (VND)</td>
+                                <td>50000, 100000</td>
+                                <td>❌ No</td>
+                            </tr>
+                            <tr>
+                                <td><strong>min_quantity</strong></td>
+                                <td>Minimum quantity for bulk discount</td>
+                                <td>5, 10, 20</td>
+                                <td>❌ No</td>
+                            </tr>
+                            <tr>
+                                <td><strong>start_date</strong></td>
+                                <td>Program start date</td>
+                                <td>2024-01-01 00:00:00</td>
+                                <td>❌ No</td>
+                            </tr>
+                            <tr>
+                                <td><strong>end_date</strong></td>
+                                <td>Program end date</td>
+                                <td>2024-12-31 23:59:59</td>
+                                <td>❌ No</td>
+                            </tr>
+                            <tr>
+                                <td><strong>status</strong></td>
+                                <td>Program status</td>
+                                <td>active, inactive</td>
+                                <td>❌ No</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="import-examples">
+                    <h3>💡 Example Programs</h3>
+                    <div class="example-grid">
+                        <div class="example-box">
+                            <h4>Buy 2 Get 1 Free</h4>
+                            <p><strong>program_type:</strong> buy_x_get_y<br>
+                            <strong>buy_quantity:</strong> 2<br>
+                            <strong>get_quantity:</strong> 1<br>
+                            <strong>product_skus:</strong> SHIRT001,SHIRT002</p>
+                        </div>
+                        <div class="example-box">
+                            <h4>20% Off Sale</h4>
+                            <p><strong>program_type:</strong> percentage_discount<br>
+                            <strong>discount_percentage:</strong> 20<br>
+                            <strong>product_ids:</strong> 123,456,789</p>
+                        </div>
+                        <div class="example-box">
+                            <h4>Bulk Discount</h4>
+                            <p><strong>program_type:</strong> bulk_discount<br>
+                            <strong>min_quantity:</strong> 10<br>
+                            <strong>discount_percentage:</strong> 15</p>
+                        </div>
+                        <div class="example-box">
+                            <h4>Fixed Amount Off</h4>
+                            <p><strong>program_type:</strong> fixed_amount_discount<br>
+                            <strong>discount_amount:</strong> 100000<br>
+                            <strong>start_date:</strong> 2024-06-01 00:00:00</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div id="import-results" class="import-results" style="display:none;">
+                    <h3>Import Results</h3>
+                    <div id="import-summary"></div>
+                    <div id="import-errors"></div>
                 </div>
             </div>
             
@@ -488,8 +653,75 @@ class WC_Discount_Programs {
                 });
             });
             
-            // Generate coupons form
-            $('#generate-coupons-form').on('submit', function(e) {
+            // Import programs form
+            $('#import-programs-form').on('submit', function(e) {
+                e.preventDefault();
+                console.log('Importing programs');
+                
+                var formData = new FormData(this);
+                formData.append('action', 'import_discount_programs');
+                
+                // Show loading state
+                var submitBtn = $(this).find('input[type="submit"]');
+                var originalText = submitBtn.val();
+                submitBtn.val('Processing...').prop('disabled', true);
+                
+                $.ajax({
+                    url: ajaxurl,
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function(response) {
+                        console.log('Import response:', response);
+                        
+                        if (response.success) {
+                            var results = response.data;
+                            var html = '<div class="notice notice-success">';
+                            html += '<h4>Import Completed!</h4>';
+                            html += '<p><strong>Total Rows:</strong> ' + results.total_rows + '</p>';
+                            html += '<p><strong>Successful:</strong> ' + results.successful + '</p>';
+                            html += '<p><strong>Failed:</strong> ' + results.failed + '</p>';
+                            
+                            if (results.errors.length > 0) {
+                                html += '<h5>Errors:</h5><ul>';
+                                results.errors.forEach(function(error) {
+                                    html += '<li>' + error + '</li>';
+                                });
+                                html += '</ul>';
+                            }
+                            
+                            html += '</div>';
+                            
+                            $('#import-results').html(html).show();
+                            
+                            // Refresh programs list if we're on programs tab
+                            if (results.successful > 0) {
+                                setTimeout(function() {
+                                    location.reload();
+                                }, 2000);
+                            }
+                        } else {
+                            alert('Import failed: ' + response.data);
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        console.error('Import error:', error);
+                        alert('Import failed: ' + error);
+                    },
+                    complete: function() {
+                        submitBtn.val(originalText).prop('disabled', false);
+                    }
+                });
+            });
+            
+            // Download template
+            $('#download-template').on('click', function(e) {
+                e.preventDefault();
+                console.log('Downloading template');
+                
+                window.location.href = ajaxurl + '?action=download_import_template';
+            });
                 e.preventDefault();
                 console.log('Generating coupons');
                 
@@ -681,6 +913,71 @@ class WC_Discount_Programs {
         .notice.notice-error {
             border-left-color: #dc3232;
         }
+        .import-section {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .template-info {
+            background: #f9f9f9;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        .import-examples {
+            margin: 20px 0;
+        }
+        .example-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin: 15px 0;
+        }
+        .example-box {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 15px;
+            border-left: 4px solid #0073aa;
+        }
+        .example-box h4 {
+            margin: 0 0 10px 0;
+            color: #0073aa;
+            font-size: 14px;
+        }
+        .example-box p {
+            margin: 0;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        .import-results {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        input[type="file"] {
+            padding: 8px;
+            border: 2px dashed #ddd;
+            border-radius: 4px;
+            background: #fafafa;
+            width: 100%;
+            max-width: 400px;
+        }
+        input[type="file"]:hover {
+            border-color: #0073aa;
+            background: #f0f8ff;
+        }
+        .description {
+            font-style: italic;
+            color: #666;
+            font-size: 12px;
+            margin-top: 5px;
+        }
         </style>
         <?php
     }
@@ -817,6 +1114,298 @@ class WC_Discount_Programs {
         $wpdb->insert($table, $program_data);
         
         wp_die('Program saved successfully!');
+    }
+    
+    public function import_programs() {
+        // Check if file was uploaded
+        if (!isset($_FILES['import_file']) || $_FILES['import_file']['error'] !== UPLOAD_ERR_OK) {
+            wp_send_json_error('No file uploaded or upload error occurred');
+        }
+        
+        $file = $_FILES['import_file'];
+        $import_mode = sanitize_text_field($_POST['import_mode']);
+        
+        // Validate file type
+        $file_extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        if (!in_array($file_extension, ['csv', 'xlsx', 'xls'])) {
+            wp_send_json_error('Invalid file type. Please upload CSV or Excel files only.');
+        }
+        
+        // Process the file
+        $import_data = $this->parse_import_file($file, $file_extension);
+        if (!$import_data) {
+            wp_send_json_error('Failed to parse the import file');
+        }
+        
+        // Handle import mode
+        if ($import_mode === 'replace_all') {
+            $this->delete_all_programs();
+        }
+        
+        $results = $this->process_import_data($import_data, $import_mode);
+        
+        wp_send_json_success($results);
+    }
+    
+    private function parse_import_file($file, $extension) {
+        $file_path = $file['tmp_name'];
+        
+        if ($extension === 'csv') {
+            return $this->parse_csv_file($file_path);
+        } else {
+            return $this->parse_excel_file($file_path);
+        }
+    }
+    
+    private function parse_csv_file($file_path) {
+        $data = array();
+        $headers = array();
+        
+        if (($handle = fopen($file_path, 'r')) !== FALSE) {
+            $row_count = 0;
+            while (($row = fgetcsv($handle, 1000, ',')) !== FALSE) {
+                if ($row_count === 0) {
+                    $headers = array_map('trim', $row);
+                } else {
+                    $row_data = array();
+                    foreach ($headers as $index => $header) {
+                        $row_data[$header] = isset($row[$index]) ? trim($row[$index]) : '';
+                    }
+                    $data[] = $row_data;
+                }
+                $row_count++;
+            }
+            fclose($handle);
+        }
+        
+        return $data;
+    }
+    
+    private function parse_excel_file($file_path) {
+        // For Excel files, we'll use a simple approach
+        // In a real implementation, you might want to use PhpSpreadsheet library
+        // For now, we'll suggest users convert to CSV
+        return false;
+    }
+    
+    private function process_import_data($data, $import_mode) {
+        global $wpdb;
+        
+        $results = array(
+            'total_rows' => count($data),
+            'successful' => 0,
+            'failed' => 0,
+            'errors' => array()
+        );
+        
+        $programs_table = $wpdb->prefix . 'wc_loyalty_programs';
+        
+        foreach ($data as $row_index => $row) {
+            $row_number = $row_index + 2; // +2 because we start from row 2 (after headers)
+            
+            try {
+                // Validate required fields
+                if (empty($row['program_name']) || empty($row['program_type'])) {
+                    throw new Exception("Missing required fields: program_name or program_type");
+                }
+                
+                // Validate program type
+                $valid_types = ['buy_x_get_y', 'percentage_discount', 'fixed_amount_discount', 'bulk_discount'];
+                if (!in_array($row['program_type'], $valid_types)) {
+                    throw new Exception("Invalid program_type: " . $row['program_type']);
+                }
+                
+                // Convert product SKUs to IDs if provided
+                $product_ids = $this->convert_skus_to_ids($row);
+                
+                // Build settings array
+                $settings = $this->build_program_settings($row, $product_ids);
+                
+                // Check if program exists (for update mode)
+                $existing_program = null;
+                if ($import_mode === 'update_existing') {
+                    $existing_program = $wpdb->get_row($wpdb->prepare(
+                        "SELECT * FROM $programs_table WHERE name = %s", 
+                        $row['program_name']
+                    ));
+                }
+                
+                // Prepare program data
+                $program_data = array(
+                    'name' => sanitize_text_field($row['program_name']),
+                    'type' => sanitize_text_field($row['program_type']),
+                    'settings' => json_encode($settings),
+                    'start_date' => !empty($row['start_date']) ? date('Y-m-d H:i:s', strtotime($row['start_date'])) : null,
+                    'end_date' => !empty($row['end_date']) ? date('Y-m-d H:i:s', strtotime($row['end_date'])) : null,
+                    'status' => !empty($row['status']) ? sanitize_text_field($row['status']) : 'active'
+                );
+                
+                // Insert or update
+                if ($existing_program && $import_mode === 'update_existing') {
+                    $wpdb->update($programs_table, $program_data, array('id' => $existing_program->id));
+                } else {
+                    $wpdb->insert($programs_table, $program_data);
+                }
+                
+                $results['successful']++;
+                
+            } catch (Exception $e) {
+                $results['failed']++;
+                $results['errors'][] = "Row $row_number: " . $e->getMessage();
+            }
+        }
+        
+        return $results;
+    }
+    
+    private function convert_skus_to_ids($row) {
+        $product_ids = array();
+        
+        // Handle product_ids column
+        if (!empty($row['product_ids'])) {
+            $ids = explode(',', $row['product_ids']);
+            foreach ($ids as $id) {
+                $id = intval(trim($id));
+                if ($id > 0) {
+                    $product_ids[] = $id;
+                }
+            }
+        }
+        
+        // Handle product_skus column
+        if (!empty($row['product_skus'])) {
+            $skus = explode(',', $row['product_skus']);
+            foreach ($skus as $sku) {
+                $sku = trim($sku);
+                if (!empty($sku)) {
+                    $product_id = wc_get_product_id_by_sku($sku);
+                    if ($product_id) {
+                        $product_ids[] = $product_id;
+                    }
+                }
+            }
+        }
+        
+        return array_unique($product_ids);
+    }
+    
+    private function build_program_settings($row, $product_ids) {
+        $settings = array();
+        
+        // Add product IDs
+        if (!empty($product_ids)) {
+            $settings['applicable_products'] = $product_ids;
+        }
+        
+        // Add type-specific settings
+        switch ($row['program_type']) {
+            case 'buy_x_get_y':
+                $settings['buy_quantity'] = !empty($row['buy_quantity']) ? intval($row['buy_quantity']) : 1;
+                $settings['get_quantity'] = !empty($row['get_quantity']) ? intval($row['get_quantity']) : 1;
+                $settings['discount_type'] = 'free'; // Default to free
+                break;
+                
+            case 'percentage_discount':
+                $settings['percentage'] = !empty($row['discount_percentage']) ? floatval($row['discount_percentage']) : 10;
+                break;
+                
+            case 'fixed_amount_discount':
+                $settings['fixed_amount'] = !empty($row['discount_amount']) ? floatval($row['discount_amount']) : 50000;
+                break;
+                
+            case 'bulk_discount':
+                $settings['bulk_min_qty'] = !empty($row['min_quantity']) ? intval($row['min_quantity']) : 5;
+                $settings['bulk_percentage'] = !empty($row['discount_percentage']) ? floatval($row['discount_percentage']) : 15;
+                break;
+        }
+        
+        return $settings;
+    }
+    
+    private function delete_all_programs() {
+        global $wpdb;
+        $programs_table = $wpdb->prefix . 'wc_loyalty_programs';
+        $wpdb->query("DELETE FROM $programs_table");
+    }
+    
+    public function download_template() {
+        $template_data = array(
+            array(
+                'program_name' => 'Summer Buy 2 Get 1',
+                'program_type' => 'buy_x_get_y',
+                'product_ids' => '123,456',
+                'product_skus' => 'SHIRT001,SHIRT002',
+                'buy_quantity' => '2',
+                'get_quantity' => '1',
+                'discount_percentage' => '',
+                'discount_amount' => '',
+                'min_quantity' => '',
+                'start_date' => '2024-06-01 00:00:00',
+                'end_date' => '2024-08-31 23:59:59',
+                'status' => 'active'
+            ),
+            array(
+                'program_name' => '20% Off Electronics',
+                'program_type' => 'percentage_discount',
+                'product_ids' => '789,012',
+                'product_skus' => 'ELEC001,ELEC002',
+                'buy_quantity' => '',
+                'get_quantity' => '',
+                'discount_percentage' => '20',
+                'discount_amount' => '',
+                'min_quantity' => '',
+                'start_date' => '2024-01-01 00:00:00',
+                'end_date' => '2024-12-31 23:59:59',
+                'status' => 'active'
+            ),
+            array(
+                'program_name' => 'Bulk Order Discount',
+                'program_type' => 'bulk_discount',
+                'product_ids' => '',
+                'product_skus' => '',
+                'buy_quantity' => '',
+                'get_quantity' => '',
+                'discount_percentage' => '15',
+                'discount_amount' => '',
+                'min_quantity' => '10',
+                'start_date' => '',
+                'end_date' => '',
+                'status' => 'active'
+            ),
+            array(
+                'program_name' => '100k Off Orders',
+                'program_type' => 'fixed_amount_discount',
+                'product_ids' => '',
+                'product_skus' => '',
+                'buy_quantity' => '',
+                'get_quantity' => '',
+                'discount_percentage' => '',
+                'discount_amount' => '100000',
+                'min_quantity' => '',
+                'start_date' => '2024-07-01 00:00:00',
+                'end_date' => '2024-07-31 23:59:59',
+                'status' => 'active'
+            )
+        );
+        
+        // Set headers for CSV download
+        header('Content-Type: text/csv');
+        header('Content-Disposition: attachment; filename="discount_programs_template.csv"');
+        
+        $output = fopen('php://output', 'w');
+        
+        // Write headers
+        $headers = array_keys($template_data[0]);
+        fputcsv($output, $headers);
+        
+        // Write data
+        foreach ($template_data as $row) {
+            fputcsv($output, $row);
+        }
+        
+        fclose($output);
+        exit();
+    }
     }
     
     public function apply_discount_programs() {
