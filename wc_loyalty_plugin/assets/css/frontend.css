@@ -1,0 +1,76 @@
+/* Frontend styles */
+.loyalty-points-info {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 4px;
+    padding: 12px;
+    margin: 10px 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.points-icon {
+    font-size: 20px;
+}
+
+.loyalty-program-info {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 15px;
+    border-radius: 8px;
+    margin: 15px 0;
+}
+
+.loyalty-program-info h4 {
+    margin: 0 0 10px 0;
+    font-size: 16px;
+}
+
+.program-offer {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 8px 12px;
+    border-radius: 4px;
+    margin: 5px 0;
+}
+
+.loyalty-points-row th,
+.use-points-row th {
+    color: #32373c;
+}
+
+#points-to-use {
+    width: 100px;
+    padding: 5px;
+    margin-right: 10px;
+}
+
+.points-usage {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-top: 15px;
+}
+
+.points-usage input {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    width: 150px;
+}
+
+.points-usage button,
+#apply-points {
+    background: #0073aa;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.points-usage button:hover,
+#apply-points:hover {
+    background: #005a87;
+}
